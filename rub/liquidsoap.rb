@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'taglib'
+require 'taglib' # gem install taglib-ruby
 
 module Liquidsoap
   class Scheduler
@@ -29,7 +29,6 @@ module Liquidsoap
       @icecast_port = "8000"
       log_verbose "Liquidsoap::Scheduler.icecast_port ... #{@icecast_port}"
       @icecast_pass = "hackme"
-      log_verbose "Liquidsoap::Scheduler.icecast_pass ... #{@icecast_pass}"
       @icecast_mount = "mount"
       log_verbose "Liquidsoap::Scheduler.icecast_mount ... #{@icecast_mount}"
     end # Liquidsoap::Scheduler.initialize
@@ -47,7 +46,6 @@ module Liquidsoap
       @icecast_port = _port
       log_verbose "Liquidsoap::Scheduler.icecast_port ... #{@icecast_port}"
       @icecast_pass = _pass
-      log_verbose "Liquidsoap::Scheduler.icecast_pass ... #{@icecast_pass}"
       @icecast_mount = _mount
       log_verbose "Liquidsoap::Scheduler.icecast_mount ... #{@icecast_mount}"
     end # Liquidsoap::Scheduler.configure_icecast
@@ -85,7 +83,7 @@ module Liquidsoap
         TagLib::FileRef.open(podcast) do | ref |
           unless ref.nil?
             props = ref.audio_properties
-            duration = props.length
+            duration = props.length - 1
           end
         end
         if duration > 0
@@ -104,11 +102,12 @@ module Liquidsoap
       track_start = Time::now.to_i
       track_end = track_start + _duration.to_i
       liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{icecast_mount}\", mksafe(single(\"#{_podcast}\")))\'"
-      pid = Process::spawn liq
+      pid = Process::spawn liq # don't try this as root
       @is_podcasting = true
+      log_verbose "Liquidsoap::Scheduler.start_podcast ... liquidsoap process #{pid}"
       while Time.now.to_i < track_end
         _diff = track_end - Time::now.to_i
-        log_verbose "Liquidsoap::Scheduler.start_podcast ... running, dies in #{_diff} seconds"
+        log_verbose "Liquidsoap::Scheduler.start_podcast ... running, dies in #{_diff} seconds" if (_diff % 10).zero?
         sleep 1
       end
       Process::kill "TERM", pid
@@ -134,7 +133,7 @@ module Liquidsoap
     end # Liquidsoap::Scheduler.running?
 
     def log_verbose _message
-      time_stamp = Time::now.strftime("%Y%m%d.%H%M%S")
+      time_stamp = Time::now.strftime("%Y/%m/%d %H:%M:%S")
       puts "#{time_stamp} #{_message}" if @is_verbose
     end # Liquidsoap::Scheduler.log_verbose
   end # Liquidsoap::Scheduler
