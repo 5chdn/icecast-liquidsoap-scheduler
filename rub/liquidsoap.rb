@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'taglib' # gem install taglib-ruby
+require 'tee'    # gem install tee
 
 module Liquidsoap
   class Scheduler
@@ -139,7 +140,9 @@ module Liquidsoap
 
     def log_verbose _message
       time_stamp = Time::now.strftime("%Y/%m/%d %H:%M:%S")
-      puts "#{time_stamp} #{_message}" if @is_verbose
+      Tee::open('liquidsoap.log', mode: 'a') do |t|
+        t.puts "#{time_stamp} #{_message}" if @is_verbose
+      end
     end # Liquidsoap::Scheduler.log_verbose
   end # Liquidsoap::Scheduler
 end # Liquidsoap

@@ -9,7 +9,7 @@ a ruby module to schedule podcasts and livestream relays to an icecast server ut
 
 rubygems:
 
-    gem install taglib-ruby
+    gem install taglib-ruby tee
 
 ### usage
 
@@ -18,6 +18,7 @@ see `example.rb`, setup environment
     #!/usr/bin/env ruby
 
     require 'taglib'
+    require 'tee'
     require './rub/liquidsoap.rb'
 
 handy to pass verbose flag
@@ -36,7 +37,7 @@ configure icecast
 
     s.configure_icecast "localhost", "8000", "hackme", "podcast"
 
-run the scheduler (forks in background)
+run the scheduler
 
     s.run_scheduler if not s.running?
 
