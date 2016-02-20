@@ -60,7 +60,8 @@ module Liquidsoap
         loop do
           update_prefix if @is_running
           check_podcasts if @is_running and not @is_podcasting
-          sleep 15
+          offset = Time::now.strftime("%S").to_i
+          sleep 60 - offset
         end
       rescue Interrupt => int
         log_verbose "Liquidsoap::Scheduler.Interrupt ... Shutting down. #{int}"
