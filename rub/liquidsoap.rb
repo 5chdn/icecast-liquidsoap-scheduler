@@ -111,7 +111,7 @@ module Liquidsoap
         log_verbose "Liquidsoap::Scheduler.start_podcast ... running, dies in #{_diff} seconds"
         sleep 1
       end
-      Process::kill "HUP", pid
+      Process::kill "TERM", pid
       Process::waitall
       is_podcasting = false
     end # Liquidsoap::Scheduler.start_podcast
