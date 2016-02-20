@@ -54,18 +54,18 @@ module Liquidsoap
       log_verbose "Liquidsoap::Scheduler.run_scheduler ..."
       @is_running = true
       log_verbose "Liquidsoap::Scheduler.is_running ... #{@is_running}"
-      pid = fork do
-        begin
-          loop do
-            update_prefix if @is_running
-            check_podcasts if @is_running and not @is_podcasting
-            sleep 15
-          end
-        rescue Interrupt => int
-          log_verbose "Liquidsoap::Scheduler.Interrupt ... Shutting down. #{int}"
+      #pid = fork do
+      begin
+        loop do
+          update_prefix if @is_running
+          check_podcasts if @is_running and not @is_podcasting
+          sleep 15
         end
+      rescue Interrupt => int
+        log_verbose "Liquidsoap::Scheduler.Interrupt ... Shutting down. #{int}"
       end
-      log_verbose "Liquidsoap::Scheduler.run_scheduler ... forked process #{pid}"
+      #end
+      #log_verbose "Liquidsoap::Scheduler.run_scheduler ... forked process #{pid}"
     end # Liquidsoap::Scheduler.run_scheduler
 
     def update_prefix
