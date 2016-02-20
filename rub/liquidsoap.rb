@@ -80,15 +80,20 @@ module Liquidsoap
       if not podcast.nil?
         log_verbose "Liquidsoap::Scheduler.check_podcasts ... #{podcast}"
         duration = -999
+        session = nil
         TagLib::FileRef.open(podcast) do | ref |
           unless ref.nil?
+            tag = ref.tag
+            session = tag.artist
+            session += " - "
+            session += tag.title
             props = ref.audio_properties
             duration = props.length - 1
           end
         end
         if duration > 0
           log_verbose "Liquidsoap::Scheduler.check_podcasts ... #{duration} seconds"
-          start_podcast podcast, duration
+          start_podcast podcast, duration, session
         else
           log_verbose "Liquidsoap::Scheduler.check_podcasts ... invalid duration #{duration}"
         end
@@ -97,11 +102,11 @@ module Liquidsoap
       end
     end # Liquidsoap::Scheduler.check_podcasts
 
-    def start_podcast _podcast, _duration
+    def start_podcast _podcast, _duration, _session
       log_verbose "Liquidsoap::Scheduler.start_podcast ..."
       track_start = Time::now.to_i
       track_end = track_start + _duration.to_i
-      liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{icecast_mount}\", mksafe(single(\"#{_podcast}\")))\'"
+      liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{icecast_mount}\", name=\"#{_session}\", mksafe(single(\"#{_podcast}\")))\'"
       pid = Process::spawn liq # don't try this as root
       @is_podcasting = true
       log_verbose "Liquidsoap::Scheduler.start_podcast ... liquidsoap process #{pid}"
