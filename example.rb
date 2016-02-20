@@ -12,6 +12,11 @@ else
 
   verbose = true if ARGV.first.eql? "-v" or ARGV.first.eql? "--verbose"
 
-  punk = Liquidsoap::Scheduler.new verbose
+  s = Liquidsoap::Scheduler.new verbose
+
+  s.set_stream_path "/tmp/streams"
+  s.set_podcast_path "/tmp/podcasts"
+
+  s.run_scheduler if not s.running?
 
 end
