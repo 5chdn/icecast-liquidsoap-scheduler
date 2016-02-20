@@ -58,7 +58,7 @@ module Liquidsoap
         begin
           loop do
             update_prefix if @is_running
-            check_podcasts if @is_running and not is_podcasting
+            check_podcasts if @is_running and not @is_podcasting
             sleep 15
           end
         rescue Interrupt => int
@@ -117,7 +117,7 @@ module Liquidsoap
       end
       Process::kill "TERM", pid
       Process::waitall
-      is_podcasting = false
+      @is_podcasting = false
     end # Liquidsoap::Scheduler.start_podcast
 
     def find_files _types
