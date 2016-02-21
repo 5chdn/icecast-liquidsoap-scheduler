@@ -89,13 +89,19 @@ module Liquidsoap
       elsif not podcast.nil?
         log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{podcast}"
         duration = -999
-        session = nil
+        session = ""
         TagLib::FileRef.open(podcast) do | ref |
           unless ref.nil?
             tag = ref.tag
-            session = tag.artist
-            session += " - "
-            session += tag.title
+            if not tag.artist.nil?
+              session = tag.artist
+            end
+            if not tag.title.nil?
+              if not session.empty?
+                session += " - "
+              end
+              session += tag.title
+            end
             props = ref.audio_properties
             duration = props.length - 1
           end
