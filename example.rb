@@ -14,7 +14,7 @@ else
   s = Liquidsoap::Scheduler.new verbose
 
   # set path to podcasts directory which is to be scanned
-  s.set_podcast_path "/tmp/podcasts"
+  s.set_path_prefix "/tmp/podcasts"
 
   # configure icecast
   s.configure_icecast "localhost", "8000", "hackme", "podcast"
