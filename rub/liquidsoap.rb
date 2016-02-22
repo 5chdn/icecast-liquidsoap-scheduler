@@ -15,7 +15,8 @@ module Liquidsoap
     attr_accessor :icecast_host
     attr_accessor :icecast_port
     attr_accessor :icecast_pass
-    attr_accessor :icecast_mount
+    attr_accessor :mount_relay
+    attr_accessor :mount_podcast
 
     def initialize _verbose = false
       @is_verbose = _verbose
@@ -32,8 +33,10 @@ module Liquidsoap
       @icecast_port = "8000"
       log_verbose "Liquidsoap::Scheduler.icecast_port ... #{@icecast_port}"
       @icecast_pass = "hackme"
-      @icecast_mount = "mount"
-      log_verbose "Liquidsoap::Scheduler.icecast_mount ... #{@icecast_mount}"
+      @mount_relay = "relay"
+      log_verbose "Liquidsoap::Scheduler.mount_relay ... #{@mount_relay}"
+      @mount_podcast = "podcast"
+      log_verbose "Liquidsoap::Scheduler.mount_podcast ... #{@mount_podcast}"
     end # Liquidsoap::Scheduler.initialize
 
     def set_path_prefix _path
@@ -42,15 +45,17 @@ module Liquidsoap
       log_verbose "Liquidsoap::Scheduler.path_prefix ... #{@path_prefix}"
     end # Liquidsoap::Scheduler.set_path_prefix
 
-    def configure_icecast _host, _port, _pass, _mount
+    def configure_icecast _host, _port, _pass, _mount_s, _mount_p
       log_verbose "Liquidsoap::Scheduler.configure_icecast ..."
       @icecast_host = _host
       log_verbose "Liquidsoap::Scheduler.icecast_host ... #{@icecast_host}"
       @icecast_port = _port
       log_verbose "Liquidsoap::Scheduler.icecast_port ... #{@icecast_port}"
       @icecast_pass = _pass
-      @icecast_mount = _mount
-      log_verbose "Liquidsoap::Scheduler.icecast_mount ... #{@icecast_mount}"
+      @mount_relay = _mount_s
+      log_verbose "Liquidsoap::Scheduler.mount_relay ... #{@mount_relay}"
+      @mount_podcast = _mount_p
+      log_verbose "Liquidsoap::Scheduler.mount_podcast ... #{@mount_podcast}"
     end # Liquidsoap::Scheduler.configure_icecast
 
     def run_scheduler
@@ -61,7 +66,7 @@ module Liquidsoap
       begin
         loop do
           update_prefix if @is_running
-          check_for_streams if @is_running and not @is_streaming
+          check_for_files if @is_running and not @is_streaming
           offset = Time::now.strftime("%S").to_i
           sleep 60 - offset
         end
@@ -78,34 +83,34 @@ module Liquidsoap
       log_verbose "Liquidsoap::Scheduler.date_prefix ... #{@date_prefix}"
     end # Liquidsoap::Scheduler.update_prefix
 
-    def check_for_streams
-      log_verbose "Liquidsoap::Scheduler.check_for_streams ..."
+    def check_for_files
+      log_verbose "Liquidsoap::Scheduler.check_for_files ..."
       relay = find_files "txt,csv"
       if not relay.nil?
-        log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{relay}"
+        log_verbose "Liquidsoap::Scheduler.check_for_files ... #{relay}"
         duration = -999
         session = ""
         parsed = CSV::read relay
         if not parsed.empty? and not parsed.nil?
-          stream = parsed.first[0].to_s
-          if stream =~ URI::regexp
+          url = parsed.first[0].to_s
+          if url =~ URI::regexp
             duration = parsed.first[1].to_i * 60 - 1
             session = parsed.first[2].to_s
             if duration > 0
-              start_relay stream, duration, session
+              start_relay url, duration, session
             else
-              log_verbose "Liquidsoap::Scheduler.check_for_streams ... duration must be positive"
+              log_verbose "Liquidsoap::Scheduler.check_for_files ... duration must be positive"
             end
           else
-            log_verbose "Liquidsoap::Scheduler.check_for_streams ... no valid stream uri"
+            log_verbose "Liquidsoap::Scheduler.check_for_files ... no valid stream uri"
           end
         else
-          log_verbose "Liquidsoap::Scheduler.check_for_streams ... can not parse csv"
+          log_verbose "Liquidsoap::Scheduler.check_for_files ... can not parse csv"
         end
       else
         podcast = find_files "mp3,ogg"
         if not podcast.nil?
-          log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{podcast}"
+          log_verbose "Liquidsoap::Scheduler.check_for_files ... #{podcast}"
           duration = -999
           session = ""
           TagLib::FileRef.open podcast do | ref |
@@ -125,22 +130,22 @@ module Liquidsoap
             end
           end
           if duration > 0
-            log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{duration} seconds"
+            log_verbose "Liquidsoap::Scheduler.check_for_files ... #{duration} seconds"
             start_podcast podcast, duration, session
           else
-            log_verbose "Liquidsoap::Scheduler.check_for_streams ... invalid duration #{duration}"
+            log_verbose "Liquidsoap::Scheduler.check_for_files ... invalid duration #{duration}"
           end
         else
-          log_verbose "Liquidsoap::Scheduler.check_for_streams ... none found"
+          log_verbose "Liquidsoap::Scheduler.check_for_files ... none found"
         end
       end
-    end # Liquidsoap::Scheduler.check_for_streams
+    end # Liquidsoap::Scheduler.check_for_files
 
     def start_podcast _podcast, _duration, _session
       log_verbose "Liquidsoap::Scheduler.start_podcast ..."
       podcast_start = Time::now.to_i
       podcast_end = podcast_start + _duration.to_i
-      liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{icecast_mount}\", name=\"#{_session}\", mksafe(single(\"#{_podcast}\")))\'"
+      liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{mount_podcast}\", name=\"#{_session}\", mksafe(single(\"#{_podcast}\")))\'"
       pid = Process::spawn liq # don't try this as root
       @is_streaming = true
       log_verbose "Liquidsoap::Scheduler.start_podcast ... liquidsoap process #{pid}"
@@ -158,7 +163,7 @@ module Liquidsoap
       log_verbose "Liquidsoap::Scheduler.start_relay ..."
       relay_start = Time::now.to_i
       relay_end = relay_start + _duration.to_i
-      liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{icecast_mount}\", name=\"#{_session}\", input.http(\"#{_relay}\"))\'"
+      liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{mount_relay}\", name=\"#{_session}\", input.http(\"#{_relay}\"))\'"
       pid = Process::spawn liq # don't try this as root
       @is_streaming = true
       log_verbose "Liquidsoap::Scheduler.start_relay ... liquidsoap process #{pid}"

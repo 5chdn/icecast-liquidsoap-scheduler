@@ -17,6 +17,8 @@ see `example.rb`, setup environment
 
     #!/usr/bin/env ruby
 
+    require 'csv'
+    require 'uri'
     require 'taglib'
     require 'tee'
     require './rub/liquidsoap.rb'
@@ -35,7 +37,7 @@ set path to podcasts directory which is to be scanned
 
 configure icecast
 
-    s.configure_icecast "localhost", "8000", "hackme", "podcast"
+    s.configure_icecast "localhost", "8000", "hackme", "relay", "podcast"
 
 run the scheduler
 

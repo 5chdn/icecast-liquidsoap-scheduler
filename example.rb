@@ -17,7 +17,7 @@ else
   s.set_path_prefix "/tmp/podcasts"
 
   # configure icecast
-  s.configure_icecast "localhost", "8000", "hackme", "podcast"
+  s.configure_icecast "localhost", "8000", "hackme", "relay", "podcast"
 
   # run the scheduler (forks in background)
   s.run_scheduler if not s.running?
