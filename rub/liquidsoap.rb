@@ -74,7 +74,7 @@ module Liquidsoap
 
     def update_prefix
       log_verbose "Liquidsoap::Scheduler.update_prefix ..."
-      @date_prefix = Time::now.strftime("%Y-%m-%d-%H-%M")
+      @date_prefix = Time::now.strftime "%Y-%m-%d-%H-%M"
       log_verbose "Liquidsoap::Scheduler.date_prefix ... #{@date_prefix}"
     end # Liquidsoap::Scheduler.update_prefix
 
@@ -85,7 +85,7 @@ module Liquidsoap
       if not relay.nil?
         log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{relay}"
         duration = -999
-        session = nil
+        session = ""
         parsed = CSV::read relay
         if not parsed.empty? and not parsed.nil?
           stream = parsed.first[0].to_s
@@ -101,7 +101,7 @@ module Liquidsoap
         log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{podcast}"
         duration = -999
         session = ""
-        TagLib::FileRef.open(podcast) do | ref |
+        TagLib::FileRef.open podcast do | ref |
           unless ref.nil?
             tag = ref.tag
             if not tag.artist.nil?
@@ -151,7 +151,6 @@ module Liquidsoap
       relay_start = Time::now.to_i
       relay_end = relay_start + _duration.to_i
       liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{icecast_mount}\", name=\"#{_session}\", input.http(\"#{_relay}\"))\'"
-      puts liq
       pid = Process::spawn liq # don't try this as root
       @is_streaming = true
       log_verbose "Liquidsoap::Scheduler.start_relay ... liquidsoap process #{pid}"
@@ -188,8 +187,8 @@ module Liquidsoap
     end # Liquidsoap::Scheduler.streaming?
 
     def log_verbose _message
-      time_stamp = Time::now.strftime("%Y/%m/%d %H:%M:%S")
-      Tee::open('liquidsoap.log', mode: 'a') do |t|
+      time_stamp = Time::now.strftime "%Y/%m/%d %H:%M:%S"
+      Tee::open 'liquidsoap.log', mode: 'a' do |t|
         t.puts "#{time_stamp} #{_message}" if @is_verbose
       end
     end # Liquidsoap::Scheduler.log_verbose
