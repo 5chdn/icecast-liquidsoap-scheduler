@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'csv'
+require 'uri'
 require 'taglib' # gem install taglib-ruby
 require 'tee'    # gem install tee
 
@@ -84,8 +86,17 @@ module Liquidsoap
         log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{relay}"
         duration = -999
         session = nil
-        ### @TODO parse relay info from file
-        start_relay relay, duration, session
+        parsed = CSV::read relay
+        if not parsed.empty? and not parsed.nil?
+          stream = parsed.first[0].to_s
+          if stream =~ URI::regexp
+            duration = parsed.first[1].to_i * 60 - 1
+            session = parsed.first[2].to_s
+            if duration > 0
+              start_relay stream, duration, session
+            end
+          end
+        end
       elsif not podcast.nil?
         log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{podcast}"
         duration = -999
@@ -127,7 +138,7 @@ module Liquidsoap
       log_verbose "Liquidsoap::Scheduler.start_podcast ... liquidsoap process #{pid}"
       while Time.now.to_i < podcast_end
         _diff = podcast_end - Time::now.to_i
-        log_verbose "Liquidsoap::Scheduler.start_podcast ... running, dies in #{_diff} seconds" if (_diff % 10).zero?
+        log_verbose "Liquidsoap::Scheduler.start_podcast ... running, ends in #{_diff} seconds" if (_diff % 10).zero?
         sleep 1
       end
       Process::kill "TERM", pid
@@ -139,7 +150,19 @@ module Liquidsoap
       log_verbose "Liquidsoap::Scheduler.start_relay ..."
       relay_start = Time::now.to_i
       relay_end = relay_start + _duration.to_i
-      liq = "liquidsoap" ### @TODO start liquidsoap relay
+      liq = "liquidsoap \'output.icecast(%vorbis, host=\"#{@icecast_host}\", port=#{icecast_port}, password=\"#{icecast_pass}\", mount=\"#{icecast_mount}\", name=\"#{_session}\", input.http(\"#{_relay}\"))\'"
+      puts liq
+      pid = Process::spawn liq # don't try this as root
+      @is_streaming = true
+      log_verbose "Liquidsoap::Scheduler.start_relay ... liquidsoap process #{pid}"
+      while Time.now.to_i < relay_end
+        _diff = relay_end - Time::now.to_i
+        log_verbose "Liquidsoap::Scheduler.start_relay ... running, ends in #{_diff} seconds" if (_diff % 10).zero?
+        sleep 1
+      end
+      Process::kill "TERM", pid
+      Process::waitall
+      @is_streaming = false
     end # Liquidsoap::Scheduler.start_relay
 
     def find_files _types
