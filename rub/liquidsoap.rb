@@ -81,7 +81,6 @@ module Liquidsoap
     def check_for_streams
       log_verbose "Liquidsoap::Scheduler.check_for_streams ..."
       relay = find_files "txt,csv"
-      podcast = find_files "mp3,ogg"
       if not relay.nil?
         log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{relay}"
         duration = -999
@@ -94,37 +93,46 @@ module Liquidsoap
             session = parsed.first[2].to_s
             if duration > 0
               start_relay stream, duration, session
+            else
+              log_verbose "Liquidsoap::Scheduler.check_for_streams ... duration must be positive"
             end
+          else
+            log_verbose "Liquidsoap::Scheduler.check_for_streams ... no valid stream uri"
           end
-        end
-      elsif not podcast.nil?
-        log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{podcast}"
-        duration = -999
-        session = ""
-        TagLib::FileRef.open podcast do | ref |
-          unless ref.nil?
-            tag = ref.tag
-            if not tag.artist.nil?
-              session = tag.artist
-            end
-            if not tag.title.nil?
-              if not session.empty?
-                session += " - "
-              end
-              session += tag.title
-            end
-            props = ref.audio_properties
-            duration = props.length - 1
-          end
-        end
-        if duration > 0
-          log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{duration} seconds"
-          start_podcast podcast, duration, session
         else
-          log_verbose "Liquidsoap::Scheduler.check_for_streams ... invalid duration #{duration}"
+          log_verbose "Liquidsoap::Scheduler.check_for_streams ... can not parse csv"
         end
       else
-        log_verbose "Liquidsoap::Scheduler.check_for_streams ... none found"
+        podcast = find_files "mp3,ogg"
+        if not podcast.nil?
+          log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{podcast}"
+          duration = -999
+          session = ""
+          TagLib::FileRef.open podcast do | ref |
+            unless ref.nil?
+              tag = ref.tag
+              if not tag.artist.nil?
+                session = tag.artist
+              end
+              if not tag.title.nil?
+                if not session.empty?
+                  session += " - "
+                end
+                session += tag.title
+              end
+              props = ref.audio_properties
+              duration = props.length - 1
+            end
+          end
+          if duration > 0
+            log_verbose "Liquidsoap::Scheduler.check_for_streams ... #{duration} seconds"
+            start_podcast podcast, duration, session
+          else
+            log_verbose "Liquidsoap::Scheduler.check_for_streams ... invalid duration #{duration}"
+          end
+        else
+          log_verbose "Liquidsoap::Scheduler.check_for_streams ... none found"
+        end
       end
     end # Liquidsoap::Scheduler.check_for_streams
 
